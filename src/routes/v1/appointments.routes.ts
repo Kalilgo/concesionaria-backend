@@ -8,7 +8,19 @@ export const appointmentsRoutes = async (app: FastifyInstance) => {
   app.get('/appointments/upcoming', { preHandler: [authenticate] }, appointmentsController.getUpcoming);
   app.get('/appointments/:id', appointmentsController.getById);
   
-  app.post('/appointments', appointmentsController.create);
+  app.post('/appointments', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+        errorResponseBuilder: () => ({
+          success: false,
+          error: 'Demasiados turnos. Intenta más tarde.',
+        }),
+      },
+    },
+  }, appointmentsController.create);
+
   app.patch('/appointments/:id/confirm', { preHandler: [authenticate] }, appointmentsController.confirm);
   app.patch('/appointments/:id/cancel', { preHandler: [authenticate] }, appointmentsController.cancel);
   app.delete('/appointments/:id', { preHandler: [authenticate] }, appointmentsController.delete);

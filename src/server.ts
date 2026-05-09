@@ -2,6 +2,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
+import sensible from '@fastify/sensible';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { app } from './app.js';
 import { env } from './config/env.js';
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -17,6 +21,35 @@ const fastify = Fastify({
   },
   trustProxy: true,
 });
+
+await fastify.register(helmet, {
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https://images.unsplash.com', 'https://res.cloudinary.com'],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+});
+
+await fastify.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute',
+  keyGenerator: (request: FastifyRequest) => request.ip,
+  errorResponseBuilder: () => ({
+    success: false,
+    error: 'Demasiadas solicitudes. Intenta más tarde.',
+  }),
+});
+
+await fastify.register(sensible);
 
 await fastify.register(cors, {
   origin: env.FRONTEND_URL,
