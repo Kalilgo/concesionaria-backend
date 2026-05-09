@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  marca         String
+  modelo        String
+  anio          Int
+  precio        Float
+  kilometros    Int
+  combustible   String
+  transmision   String
+  color         String
+  descripcion   String
+  caracteristicas String
+  slug          String   @unique
+  imagenes      String   @default("[]")
+  disponible    Boolean  @default(true)
+  destacado     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appointments  Appointment[]
+  inquiries     Inquiry[]
+}
+
+model Inquiry {
+  id        String   @id @default(cuid())
+  nombre    String
+  email     String
+  telefono  String
+  mensaje   String
+  vehicleId String?
+  leido     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  nombre      String
+  email       String
+  telefono    String
+  fecha       DateTime
+  hora        String
+  vehiculo    String
+  comentarios String?
+  confirmado  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id])
+  vehicleId   String?
+}
