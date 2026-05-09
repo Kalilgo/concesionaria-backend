@@ -16,16 +16,16 @@ Backend API para la aplicación de concesionaria de vehículos.
 
 ```
 src/
-├── server.ts         # Punto de entrada
-├── app.ts            # Registro de rutas
-├── config/           # Configuración de entorno
-├── routes/          # Rutas de la API
-├── controllers/     # Controladores
-├── services/        # Lógica de negocio
-├── middlewares/     # Middlewares (auth, error handling)
-├── lib/             # Utilidades (Prisma, Cloudinary, Resend)
-├── validations/     # Schemas Zod
-└── types/           # Tipos TypeScript
+├── server.ts          # Punto de entrada con configuración
+├── app.ts             # Registro de rutas
+├── config/            # Configuración de entorno validada
+├── routes/            # Rutas de la API
+├── controllers/       # Controladores (lógica HTTP)
+├── services/          # Lógica de negocio
+├── middlewares/       # Middlewares (auth, error handling)
+├── lib/               # Utilidades (Prisma, Cloudinary, Resend)
+├── types/             # Tipos TypeScript
+└── utils/             # Utilidades comunes (responses, errors)
 ```
 
 ## Inicio Rápido
@@ -47,41 +47,78 @@ npm run db:seed
 npm run dev
 ```
 
+## Variables de Entorno
+
+```env
+DATABASE_URL=file:./prisma/prisma/dev.db
+JWT_SECRET=tu-secret-key-minimo-32-caracteres
+JWT_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:3000
+PORT=4000
+NODE_ENV=development
+
+# Opcional - Cloudinary para uploads
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Opcional - Resend para emails
+RESEND_API_KEY=
+```
+
+## Credenciales de Prueba
+
+Después de ejecutar `npm run db:seed`:
+
+- **Email**: `admin@concesionaria.com`
+- **Contraseña**: `admin123`
+
 ## Rutas API
 
 ### Auth
 - `POST /api/v1/auth/login` - Iniciar sesión
 - `POST /api/v1/auth/logout` - Cerrar sesión
-- `GET /api/v1/auth/me` - Obtener usuario actual
+- `POST /api/v1/auth/refresh` - Renovar token
+- `GET /api/v1/auth/me` - Obtener usuario actual (requiere auth)
 
 ### Vehículos
-- `GET /api/v1/vehicles` - Listar todos
-- `GET /api/v1/vehicles/marcas` - Listar marcas
+- `GET /api/v1/vehicles` - Listar todos (soporta paginación y filtros)
+- `GET /api/v1/vehicles/marcas` - Listar marcas únicas
+- `GET /api/v1/vehicles/filtros` - Obtener todos los filtros disponibles
 - `GET /api/v1/vehicles/slug/:slug` - Obtener por slug
+- `GET /api/v1/vehicles/:id` - Obtener por ID
 - `POST /api/v1/vehicles` - Crear (admin)
 - `PUT /api/v1/vehicles/:id` - Actualizar (admin)
 - `DELETE /api/v1/vehicles/:id` - Eliminar (admin)
 
 ### Consultas
-- `GET /api/v1/inquiries` - Listar consultas
+- `GET /api/v1/inquiries` - Listar consultas (paginación)
+- `GET /api/v1/inquiries/stats` - Estadísticas (admin)
+- `GET /api/v1/inquiries/:id` - Ver consulta
 - `POST /api/v1/inquiries` - Crear consulta
 - `PATCH /api/v1/inquiries/:id/read` - Marcar como leída (admin)
+- `PATCH /api/v1/inquiries/read-all` - Marcar todas como leídas (admin)
 - `DELETE /api/v1/inquiries/:id` - Eliminar (admin)
 
 ### Turnos
-- `GET /api/v1/appointments` - Listar turnos
+- `GET /api/v1/appointments` - Listar turnos (paginación)
+- `GET /api/v1/appointments/stats` - Estadísticas (admin)
+- `GET /api/v1/appointments/upcoming` - Próximos turnos (admin)
+- `GET /api/v1/appointments/:id` - Ver turno
 - `POST /api/v1/appointments` - Crear turno
 - `PATCH /api/v1/appointments/:id/confirm` - Confirmar turno (admin)
+- `PATCH /api/v1/appointments/:id/cancel` - Cancelar turno (admin)
 - `DELETE /api/v1/appointments/:id` - Eliminar (admin)
 
-## Variables de Entorno
+## Scripts
 
-```env
-DATABASE_URL=file:./dev.db
-JWT_SECRET=tu-secret-key
-JWT_EXPIRES_IN=7d
-FRONTEND_URL=http://localhost:3000
-PORT=4000
+```bash
+npm run dev          # Desarrollo con hot-reload
+npm run build        # Compilar TypeScript
+npm run start        # Iniciar producción
+npm run db:generate  # Generar Prisma Client
+npm run db:push      # Sincronizar schema con DB
+npm run db:seed      # Poblar datos de ejemplo
 ```
 
 ## Deploy
@@ -92,3 +129,16 @@ Recomendado: Railway
 2. Railway detecta automáticamente Node.js
 3. Configurar DATABASE_URL desde el panel
 4. Establecer FRONTEND_URL al dominio de Vercel
+
+## Características Implementadas
+
+- Validación de entorno con Zod
+- Manejo centralizado de errores
+- Respuestas API estandarizadas
+- Shutdown graceful (SIGTERM/SIGINT)
+- Logging estructurado con niveles
+- CORS configurado para frontend
+- Cookies httpOnly para JWT
+- Email notifications (opcional)
+- Paginación en listados
+- Filtros avanzados en vehículos

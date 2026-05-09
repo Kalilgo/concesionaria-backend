@@ -1,64 +1,49 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { inquiriesService } from '../services/inquiries.service.js';
-import { createInquirySchema, updateInquirySchema } from '../validations/inquiry.schema.js';
+import { sendSuccess, sendCreated } from '../utils/response.js';
 
 export const inquiriesController = {
   async getAll(req: FastifyRequest, reply: FastifyReply) {
-    const query = req.query as { unreadOnly?: string };
-    const unreadOnly = query.unreadOnly === 'true';
-    const inquiries = await inquiriesService.findAll(unreadOnly);
-    return reply.send({ data: inquiries });
+    const { unreadOnly, page, limit } = req.query as Record<string, string | undefined>;
+    const result = await inquiriesService.findAll({
+      unreadOnly: unreadOnly === 'true',
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+    });
+    return sendSuccess(reply, result);
   },
 
   async getById(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const inquiry = await inquiriesService.findById(id);
-    if (!inquiry) {
-      return reply.status(404).send({ error: 'Consulta no encontrada' });
-    }
-    return reply.send({ data: inquiry });
+    return sendSuccess(reply, inquiry);
   },
 
   async create(req: FastifyRequest, reply: FastifyReply) {
-    const result = createInquirySchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
-    }
-    const inquiry = await inquiriesService.create(result.data);
-    return reply.status(201).send({ data: inquiry });
-  },
-
-  async update(req: FastifyRequest, reply: FastifyReply) {
-    const { id } = req.params as { id: string };
-    const result = updateInquirySchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
-    }
-    const inquiry = await inquiriesService.update(id, result.data);
-    if (!inquiry) {
-      return reply.status(404).send({ error: 'Consulta no encontrada' });
-    }
-    return reply.send({ data: inquiry });
+    const data = req.body as Record<string, unknown>;
+    const inquiry = await inquiriesService.create(data as any);
+    return sendCreated(reply, inquiry, 'Consulta enviada exitosamente');
   },
 
   async markAsRead(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const inquiry = await inquiriesService.markAsRead(id);
-    return reply.send({ data: inquiry });
+    return sendSuccess(reply, inquiry, 'Consulta marcada como leída');
+  },
+
+  async markAllAsRead(req: FastifyRequest, reply: FastifyReply) {
+    const count = await inquiriesService.markAllAsRead();
+    return sendSuccess(reply, { count }, 'Todas las consultas marcadas como leídas');
   },
 
   async delete(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
-    try {
-      await inquiriesService.delete(id);
-      return reply.status(204).send();
-    } catch {
-      return reply.status(404).send({ error: 'Consulta no encontrada' });
-    }
+    await inquiriesService.delete(id);
+    return reply.status(204).send();
   },
 
   async getStats(req: FastifyRequest, reply: FastifyReply) {
     const stats = await inquiriesService.getStats();
-    return reply.send({ data: stats });
+    return sendSuccess(reply, stats);
   },
 };

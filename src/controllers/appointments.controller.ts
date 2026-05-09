@@ -1,67 +1,64 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { appointmentsService } from '../services/appointments.service.js';
-import { createAppointmentSchema, updateAppointmentSchema } from '../validations/appointment.schema.js';
+import { sendSuccess, sendCreated } from '../utils/response.js';
 
 export const appointmentsController = {
   async getAll(req: FastifyRequest, reply: FastifyReply) {
-    const query = req.query as { confirmedOnly?: string };
-    const confirmedOnly = query.confirmedOnly === 'true';
-    const appointments = await appointmentsService.findAll(confirmedOnly);
-    return reply.send({ data: appointments });
+    const { confirmedOnly, page, limit } = req.query as Record<string, string | undefined>;
+    const result = await appointmentsService.findAll({
+      confirmedOnly: confirmedOnly === 'true',
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+    });
+    return sendSuccess(reply, result);
   },
 
   async getById(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const appointment = await appointmentsService.findById(id);
-    if (!appointment) {
-      return reply.status(404).send({ error: 'Turno no encontrado' });
-    }
-    return reply.send({ data: appointment });
+    return sendSuccess(reply, appointment);
   },
 
   async create(req: FastifyRequest, reply: FastifyReply) {
-    const result = createAppointmentSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
-    }
-    const appointment = await appointmentsService.create({
-      ...result.data,
-      fecha: new Date(result.data.fecha),
-    });
-    return reply.status(201).send({ data: appointment });
-  },
+    const data = req.body as Record<string, unknown>;
 
-  async update(req: FastifyRequest, reply: FastifyReply) {
-    const { id } = req.params as { id: string };
-    const result = updateAppointmentSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
+    try {
+      const appointment = await appointmentsService.create(data as any);
+      return sendCreated(reply, appointment, 'Turno solicitado exitosamente');
+    } catch (error: any) {
+      if (error.message?.includes('horario')) {
+        return reply.status(409).send({ success: false, error: error.message });
+      }
+      throw error;
     }
-    const appointment = await appointmentsService.update(id, result.data);
-    if (!appointment) {
-      return reply.status(404).send({ error: 'Turno no encontrado' });
-    }
-    return reply.send({ data: appointment });
   },
 
   async confirm(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const appointment = await appointmentsService.confirm(id);
-    return reply.send({ data: appointment });
+    return sendSuccess(reply, appointment, 'Turno confirmado');
+  },
+
+  async cancel(req: FastifyRequest, reply: FastifyReply) {
+    const { id } = req.params as { id: string };
+    const appointment = await appointmentsService.cancel(id);
+    return sendSuccess(reply, appointment, 'Turno cancelado');
   },
 
   async delete(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
-    try {
-      await appointmentsService.delete(id);
-      return reply.status(204).send();
-    } catch {
-      return reply.status(404).send({ error: 'Turno no encontrado' });
-    }
+    await appointmentsService.delete(id);
+    return reply.status(204).send();
   },
 
   async getStats(req: FastifyRequest, reply: FastifyReply) {
     const stats = await appointmentsService.getStats();
-    return reply.send({ data: stats });
+    return sendSuccess(reply, stats);
+  },
+
+  async getUpcoming(req: FastifyRequest, reply: FastifyReply) {
+    const { limit } = req.query as { limit?: string };
+    const upcoming = await appointmentsService.getUpcoming(limit ? Number(limit) : 5);
+    return sendSuccess(reply, upcoming);
   },
 };

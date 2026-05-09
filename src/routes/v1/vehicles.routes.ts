@@ -6,6 +6,7 @@ import { authorize } from '../../middlewares/authorize.js';
 export const vehiclesRoutes = async (app: FastifyInstance) => {
   app.get('/vehicles', vehiclesController.getAll);
   app.get('/vehicles/marcas', vehiclesController.getMarcas);
+  app.get('/vehicles/filtros', vehiclesController.getFiltros);
   app.get('/vehicles/slug/:slug', vehiclesController.getBySlug);
   app.get('/vehicles/:id', vehiclesController.getById);
 

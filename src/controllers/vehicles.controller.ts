@@ -1,69 +1,92 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { vehiclesService } from '../services/vehicles.service.js';
-import { createVehicleSchema, updateVehicleSchema, vehicleQuerySchema } from '../validations/vehicle.schema.js';
+import { sendSuccess, sendCreated, sendError } from '../utils/response.js';
+import { Prisma } from '@prisma/client';
 
 export const vehiclesController = {
   async getAll(req: FastifyRequest, reply: FastifyReply) {
-    const queryResult = vehicleQuerySchema.safeParse(req.query);
-    if (!queryResult.success) {
-      return reply.status(400).send({ error: queryResult.error.errors });
-    }
-    const vehicles = await vehiclesService.findAll(queryResult.data);
-    return reply.send({ data: vehicles });
+    const {
+      marca,
+      combustible,
+      transmision,
+      disponible,
+      destacado,
+      minPrecio,
+      maxPrecio,
+      page,
+      limit,
+    } = req.query as Record<string, string | undefined>;
+
+    const filters = {
+      marca,
+      combustible,
+      transmision,
+      disponible: disponible === 'true' ? true : disponible === 'false' ? false : undefined,
+      destacado: destacado === 'true' ? true : destacado === 'false' ? false : undefined,
+      minPrecio: minPrecio ? Number(minPrecio) : undefined,
+      maxPrecio: maxPrecio ? Number(maxPrecio) : undefined,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+    };
+
+    const result = await vehiclesService.findAll(filters);
+    return sendSuccess(reply, result.vehicles, undefined);
   },
 
   async getBySlug(req: FastifyRequest, reply: FastifyReply) {
     const { slug } = req.params as { slug: string };
     const vehicle = await vehiclesService.findBySlug(slug);
-    if (!vehicle) {
-      return reply.status(404).send({ error: 'Vehículo no encontrado' });
-    }
-    return reply.send({ data: vehicle });
+    return sendSuccess(reply, vehicle);
   },
 
   async getById(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
     const vehicle = await vehiclesService.findById(id);
-    if (!vehicle) {
-      return reply.status(404).send({ error: 'Vehículo no encontrado' });
-    }
-    return reply.send({ data: vehicle });
+    return sendSuccess(reply, vehicle);
   },
 
   async create(req: FastifyRequest, reply: FastifyReply) {
-    const result = createVehicleSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
+    const data = req.body as Record<string, unknown>;
+
+    try {
+      const vehicle = await vehiclesService.create(data as any);
+      return sendCreated(reply, vehicle, 'Vehículo creado exitosamente');
+    } catch (error: any) {
+      if (error.message?.includes('slug')) {
+        return sendError(reply, 409, 'Ya existe un vehículo con este slug');
+      }
+      throw error;
     }
-    const vehicle = await vehiclesService.create(result.data);
-    return reply.status(201).send({ data: vehicle });
   },
 
   async update(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
-    const result = updateVehicleSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
+    const data = req.body as Record<string, unknown>;
+
+    try {
+      const vehicle = await vehiclesService.update(id, data as any);
+      return sendSuccess(reply, vehicle, 'Vehículo actualizado exitosamente');
+    } catch (error: any) {
+      if (error.message?.includes('slug')) {
+        return sendError(reply, 409, 'Ya existe un vehículo con este slug');
+      }
+      throw error;
     }
-    const vehicle = await vehiclesService.update(id, result.data);
-    if (!vehicle) {
-      return reply.status(404).send({ error: 'Vehículo no encontrado' });
-    }
-    return reply.send({ data: vehicle });
   },
 
   async delete(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
-    try {
-      await vehiclesService.delete(id);
-      return reply.status(204).send();
-    } catch {
-      return reply.status(404).send({ error: 'Vehículo no encontrado' });
-    }
+    await vehiclesService.delete(id);
+    return reply.status(204).send();
   },
 
   async getMarcas(req: FastifyRequest, reply: FastifyReply) {
     const marcas = await vehiclesService.getMarcas();
-    return reply.send({ data: marcas });
+    return sendSuccess(reply, marcas);
+  },
+
+  async getFiltros(req: FastifyRequest, reply: FastifyReply) {
+    const filtros = await vehiclesService.getFiltros();
+    return sendSuccess(reply, filtros);
   },
 };

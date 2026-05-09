@@ -7,4 +7,5 @@ export const authRoutes = async (app: FastifyInstance) => {
   app.post('/auth/register', authController.register);
   app.post('/auth/logout', authController.logout);
   app.get('/auth/me', { preHandler: [authenticate] }, authController.me);
+  app.post('/auth/refresh', { preHandler: [authenticate] }, authController.refreshToken);
 };

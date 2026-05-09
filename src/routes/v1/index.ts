@@ -5,8 +5,8 @@ import { appointmentsRoutes } from './appointments.routes.js';
 import { authRoutes } from './auth.routes.js';
 
 export const v1Routes = async (app: FastifyInstance) => {
-  await app.register(vehiclesRoutes, { prefix: '/v1' });
-  await app.register(inquiriesRoutes, { prefix: '/v1' });
-  await app.register(appointmentsRoutes, { prefix: '/v1' });
-  await app.register(authRoutes, { prefix: '/v1' });
+  await app.register(vehiclesRoutes, { prefix: '' });
+  await app.register(inquiriesRoutes, { prefix: '' });
+  await app.register(appointmentsRoutes, { prefix: '' });
+  await app.register(authRoutes, { prefix: '' });
 };

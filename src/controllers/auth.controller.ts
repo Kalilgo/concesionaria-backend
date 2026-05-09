@@ -1,31 +1,36 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { authService } from '../services/auth.service.js';
-import { z } from 'zod';
 import { env } from '../config/env.js';
+import { sendSuccess, sendCreated, sendError } from '../utils/response.js';
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
+const loginSchema = {
+  type: 'object',
+  required: ['email', 'password'],
+  properties: {
+    email: { type: 'string', format: 'email' },
+    password: { type: 'string', minLength: 1 },
+  },
+};
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(1),
-});
+const registerSchema = {
+  type: 'object',
+  required: ['email', 'password', 'name'],
+  properties: {
+    email: { type: 'string', format: 'email' },
+    password: { type: 'string', minLength: 6 },
+    name: { type: 'string', minLength: 1 },
+  },
+};
 
 export const authController = {
   async login(req: FastifyRequest, reply: FastifyReply) {
-    const result = loginSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
+    const { email, password } = req.body as { email: string; password: string };
+
+    if (!email || !password) {
+      return sendError(reply, 400, 'Email y contraseña son requeridos');
     }
 
-    const admin = await authService.validateAdmin(result.data.email, result.data.password);
-    if (!admin) {
-      return reply.status(401).send({ error: 'Credenciales inválidas' });
-    }
-
+    const admin = await authService.validateAdmin(email, password);
     const token = authService.generateToken(reply.server, admin);
     
     reply.setCookie('token', token, {
@@ -36,30 +41,48 @@ export const authController = {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return reply.send({ data: { id: admin.id, email: admin.email } });
+    return sendSuccess(reply, { id: admin.id, email: admin.email }, 'Login exitoso');
   },
 
   async register(req: FastifyRequest, reply: FastifyReply) {
-    const result = registerSchema.safeParse(req.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: result.error.errors });
+    const { email, password, name } = req.body as { email: string; password: string; name: string };
+
+    if (!email || !password || !name) {
+      return sendError(reply, 400, 'Todos los campos son requeridos');
     }
 
-    const admin = await authService.createAdmin(
-      result.data.email,
-      result.data.password,
-      result.data.name
-    );
+    if (password.length < 6) {
+      return sendError(reply, 400, 'La contraseña debe tener al menos 6 caracteres');
+    }
 
-    return reply.status(201).send({ data: { id: admin.id, email: admin.email } });
+    const admin = await authService.createAdmin(email, password, name);
+
+    return sendCreated(reply, { id: admin.id, email: admin.email }, 'Admin creado exitosamente');
   },
 
   async logout(req: FastifyRequest, reply: FastifyReply) {
     reply.clearCookie('token', { path: '/' });
-    return reply.send({ message: 'Sesión cerrada' });
+    return sendSuccess(reply, null, 'Sesión cerrada');
   },
 
   async me(req: FastifyRequest, reply: FastifyReply) {
-    return reply.send({ data: req.user });
+    const user = req.user as { id: string; email: string };
+    const admin = await authService.getAdminById(user.id);
+    return sendSuccess(reply, admin);
+  },
+
+  async refreshToken(req: FastifyRequest, reply: FastifyReply) {
+    const user = req.user as { id: string; email: string };
+    const token = authService.generateToken(reply.server, { id: user.id, email: user.email });
+    
+    reply.setCookie('token', token, {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return sendSuccess(reply, { token }, 'Token renovado');
   },
 };
