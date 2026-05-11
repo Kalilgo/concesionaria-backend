@@ -20,6 +20,7 @@ const fastify = Fastify({
     } : undefined,
   },
   trustProxy: true,
+  bodyLimit: 10 * 1024 * 1024,
 });
 
 await fastify.register(helmet, {

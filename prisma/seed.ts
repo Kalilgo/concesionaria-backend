@@ -13,7 +13,7 @@ async function main() {
     },
   });
 
-  await prisma.vehicle.createMany({
+await prisma.vehicle.createMany({
     data: [
       {
         marca: 'Toyota',
@@ -27,7 +27,7 @@ async function main() {
         descripcion: 'El Toyota Corolla más nuevo del mercado, con tecnología híbrida opcional.',
         caracteristicas: 'Pantalla táctil 9", cámara de retroceso, asistentes de conducción',
         slug: 'toyota-corolla-2024',
-        imagenes: JSON.stringify(['https://images.unsplash.com/photo-1621007947382-bb3c7f4f3b97?auto=format&fit=crop&w=800&q=80']),
+        imagenes: JSON.stringify([]),
         destacado: true,
       },
       {
@@ -42,7 +42,7 @@ async function main() {
         descripcion: 'El icónico muscle car americano con motor V8 de 5.0L.',
         caracteristicas: 'Motor V8 450cv, escape activo, diferencial deportivo',
         slug: 'ford-mustang-v8-2023',
-        imagenes: JSON.stringify(['https://images.unsplash.com/photo-1584345604476-8ec5f82d661f?auto=format&fit=crop&w=800&q=80']),
+        imagenes: JSON.stringify([]),
         destacado: true,
       },
       {
@@ -57,7 +57,7 @@ async function main() {
         descripcion: 'El hatchback deportivo por excelencia con 245cv de potencia.',
         caracteristicas: 'Motor 2.0L TSI, suspensión adaptativa, selector de modos de conducción',
         slug: 'vw-golf-gti-2024',
-        imagenes: JSON.stringify(['https://images.unsplash.com/photo-1606664515524-ed2f786a0a5b?auto=format&fit=crop&w=800&q=80']),
+        imagenes: JSON.stringify([]),
         disponible: true,
       },
     ],

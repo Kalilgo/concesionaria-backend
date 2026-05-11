@@ -70,8 +70,8 @@ RESEND_API_KEY=
 
 Después de ejecutar `npm run db:seed`:
 
-- **Email**: `admin@concesionaria.com`
-- **Contraseña**: `admin123`
+- **Email**: `gomezukalil@gmail.com`
+- **Contraseña**: `123`
 
 ## Rutas API
 
