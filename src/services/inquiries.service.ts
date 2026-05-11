@@ -43,7 +43,7 @@ export const inquiriesService = {
       : 'Consulta general';
 
     await sendEmail({
-      to: 'admin@concesionaria.com',
+      to: 'gomezukalil@gmail.com',
       subject: `Nueva consulta de ${data.nombre}`,
       html: `
         <h1>Nueva consulta</h1>

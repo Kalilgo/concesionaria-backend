@@ -53,7 +53,7 @@ export const appointmentsService = {
     });
 
     await sendEmail({
-      to: 'admin@concesionaria.com',
+      to: 'gomezukalil@gmail.com',
       subject: `Nuevo turno de ${data.nombre}`,
       html: `
         <h1>Nuevo turno solicitado</h1>
